@@ -13,8 +13,14 @@ db = mysql.connector.connect(host="10.243.12.5",
 
 cursor = db.cursor()
 
+number = 1
+table = f"{number // 1000000 + 1}m"
+
+#cursor.execute(f"SELECT `421_loop`, `thread` FROM `{table}` WHERE `number`='{number}'")
 cursor.execute("SELECT * FROM `1m`")
 
-print(cursor.fetchall())
+row = cursor.fetchone()
+
+print(f"{row[0]}, {row[1]}.")
 
 print(db)
