@@ -1,5 +1,4 @@
 import mysql.connector
-from time import sleep
 from decouple import config
 
 class database:
@@ -16,6 +15,8 @@ class database:
             )
 
             self.cursor = self.db.cursor()
+
+            self.db.close()
         except mysql.connector.Error as e:
             print(e)
             print("=====================================")
@@ -27,29 +28,29 @@ class database:
         pass    
 
     def check(self, number):
-        self.db.close()
         while True:
-            self.__init__()
+            self.db.connect()
             table = f"{number // 1000000 + 1}m"
 
             self.cursor.execute(f"SELECT `421_loop`, `thread` FROM `{table}` WHERE `number`='{number}';")
 
             row = self.cursor.fetchall()
-            self.db.close()
 
             print(row)
 
-            if row[0][1] == 0:
+            if row[0][1] == None:
                 if row[0][0] == 1:
                     return True
 
                 elif row[0][0] == 0:
                     return False
 
-                """
+            self.db.close()
+
+            """
             else:
                 print(f"Fatal error:\n`421_loop` column had value of {row[0]} at number {number} in table {table}.\nWTF!?")
-                """
+            """
 
     def set_loop(self, start_number):
         pass
