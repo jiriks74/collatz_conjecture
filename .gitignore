@@ -130,3 +130,6 @@ dmypy.json
 
 # VSCode folder
 .vscode
+
+# .ssl folder with SSL Certificates
+.ssl
