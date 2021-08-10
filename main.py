@@ -35,7 +35,19 @@ class compute:
             time.sleep(delay)
 
     def compute(self) -> None:
-        pass
+        acnum = 1
+        dt = data()
+        while True:
+            if dt.check(acnum):
+                if acnum % 2 == 0:
+                    pass
+                else:
+                    pass
+            else:
+                print(f"""Probably error:
+                Number {acnum} doesn't fall into 421_loop
+                """)
+                exit()
 
 if __name__ == "__main__":
     compute().start_threads()
