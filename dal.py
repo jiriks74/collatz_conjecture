@@ -100,7 +100,7 @@ class data:
 
                     else: # Else - nonsense value has appeared in database - WTF? JustInCase
                         print(f"""Nonsense in database was found:
-                        In table: {tablenum}
+                        In table: {tabname}
                         At number: {number}""")
 
                         exit()

@@ -1,26 +1,41 @@
-import mysql.connector
-from decouple import config
+from dal import data
+import threading
+from queue import Queue
+import multiprocessing
 
-db = mysql.connector.connect(host="10.243.12.5",
-    port=int(config('port')),
-    user=config('user'),
-    passwd=config('passwd'),
-    db=config('db'),
-    ssl_ca=config('ssl_ca'),
-    ssl_key=config('ssl_key'),
-    ssl_cert=config('ssl_cert')
-)
+import time
+from datetime import datetime
+class compute:
+    def __init__(self) -> None:
+        self.q = Queue()
+        self.q.put("0")
+        self.q.put("")
 
-cursor = db.cursor()
+    def start_threads(self) -> None:
+        threads = []
+        for i in range(multiprocessing.cpu_count()-1):
+            threads.append(threading.Thread(target=self.periodic_messages, args=(f"t{i}", i+5)))
+            threads[i].start()
+            print(f"{threads[i].getName()} was started")
 
-number = 1
-table = f"{number // 1000000 + 1}m"
+        while True:
+            if self.q.queue[0] == 1:
+                print(self.q.queue[1])
 
-#cursor.execute(f"SELECT `421_loop`, `thread` FROM `{table}` WHERE `number`='{number}'")
-cursor.execute("SELECT * FROM `1m`")
+                self.q.queue[0] = 0
 
-row = cursor.fetchone()
+    def periodic_messages(self, thread_name, delay):
+        while True:
+            while self.q.queue[0] == 1:
+                pass
 
-print(f"{row[0]}, {row[1]}.")
+            self.q.queue[1] = f"{thread_name}: {datetime.now()}"
+            self.q.queue[0] = 1
+            #print(f"Message put into q and flag was set.\n The message was: \'{q.get()}\'")
+            time.sleep(delay)
 
-print(db)
+    def compute(self) -> None:
+        pass
+
+if __name__ == "__main__":
+    compute().start_threads()
