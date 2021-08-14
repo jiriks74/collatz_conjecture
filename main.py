@@ -9,18 +9,20 @@ from datetime import datetime
 from random import random
 class compute:
     def __init__(self) -> None:
-        self.q = Queue()
-        self.q.put(0)
-        self.q.put(1)
+        pass
 
     def main_thread(self) -> None:
+        self.q = Queue()
+        self.q.put(0)
+        self.q.put(0)
+
         threads = []
         for i in range(multiprocessing.cpu_count()-1):
         #for i in range(1):
             threads.append(threading.Thread(target=self.solve, args=()))
             threads[i].start()
             print(f"{threads[i].getName()} was started")
-            time.sleep(1)
+            #time.sleep(2)
 
         while True:
             
@@ -37,14 +39,15 @@ class compute:
             else:
                 self.clear()
 
-    def solve(self):
+    def solve(self) -> None:
         while True:
-            acnum = self.q.queue[1]
+            acnum = self.q.queue[1] + 1
+            try:
+                self.q.queue[1] = acnum
             #print (self.q.queue[0])
             if self.q.queue[0] != "stop":
                 self.compute(acnum)
                 #self.periodic_messages(1)
-                self.q.queue[1] += 1
 
             else:
                 print(f"Thread '{threading.currentThread().getName()} stopped.")
@@ -56,30 +59,34 @@ class compute:
         ;param startnum (number that you want to calculate the sequence for)
         ;return None
         """
-        acnum = startnum
-        dt = data()
-        while True:
-            exists, loop = dt.check(acnum)
-            if not exists:
-                if acnum % 2 == 0:
-                    next_num = acnum / 2
-                    dt.write(acnum, next_num)
-                    acnum = next_num
+        try:
+            acnum = startnum
+            dt = data()
+            while True:
+                exists, loop = dt.check(acnum)
+                if not exists:
+                    if acnum % 2 == 0:
+                        next_num = acnum / 2
+                        dt.write(acnum, next_num)
+                        acnum = next_num
 
+                    else:
+                        next_num = 3 * acnum + 1
+                        dt.write(acnum, next_num)
+                        acnum = next_num
                 else:
-                    next_num = 3 * acnum + 1
-                    dt.write(acnum, next_num)
-                    acnum = next_num
-            else:
-                if loop:
-                    dt.set_loop(startnum)
-                    break
-                if not loop:
-#                   dt.set_loop(startnum, threading.currentThread().getName())
-                    print(f"""Non 421 number found!:
-                    Startnum: {startnum}
-                    Table: {dt.tablename(startnum)}""")
-                    exit()
+                    if loop:
+                        dt.set_loop(startnum)
+                        break
+                    if not loop:
+    #                   dt.set_loop(startnum, threading.currentThread().getName())
+                        print(f"""Non 421 number found!:
+                        Startnum: {startnum}
+                        Table: {dt.tablename(startnum)}""")
+                        exit()
+        except Exception as e:
+            self.q.queue[0] = "stop"
+            print(e)
 
     def clear(self):
         """

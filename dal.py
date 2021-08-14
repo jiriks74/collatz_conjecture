@@ -1,7 +1,9 @@
 from logging import exception
+from main import compute
 import threading
 import mysql.connector
 from decouple import config
+from mysql.connector.errors import ProgrammingError
 
 class MySQLWrapper:
     """
@@ -93,15 +95,9 @@ class data:
                 `421_loop` BOOLEAN NOT NULL,
                 `thread` CHAR(107) NOT NULL
                 );""")
-            try:
-                db.execute(f"INSERT INTO `{tablename}` (`number`, `next_number`, `421_loop`, `thread`) VALUES ('{number}', '{next_number}', '0', '{thread}');") 
-            except Exception as e:
-                if str(e).startswith("1062"):
-                    print("Duplicate")
-                else:
-                    print(e)
-                    exit()  
 
+            db.execute(f"UPDATE `{tablename}` SET `number` = '{number}', `next_number` = '{next_number}', `421_loop` = '0', `thread` = '{thread}' WHERE `number` = '{number}';") 
+            
     def check(self, number):
         """
         Check if number exists in database and return if it falls into 421 loop.
@@ -117,10 +113,19 @@ class data:
             tabname = self.tablename(number)
             while True: # Loop so I can check the values repeatedly when other thread is working on them
 
-                table = db.query(f"SELECT `421_loop`, `thread` FROM `{tabname}` WHERE `number`='{number}';", cache=False)
+                try:
+                    table = db.query(f"SELECT `421_loop`, `thread` FROM `{tabname}` WHERE `number`='{number}';", cache=False)
+                    
+                except ProgrammingError as e:
+                    if str(e).startswith(1146):
+                        return False, False
+                    else:
+                        compute().q.queue[0] = "stop"
+                        print(e)
 
                 #print(table)
                 if len(table) == 0:
+                    db.execute(f"INSERT INTO `{tabname}` (`number`, `next_number`, `421_loop`, `thread`) VALUES ('{number}', '{0}', '0', '{thread}');")
                     return False, False
 
                 else:
