@@ -1,3 +1,4 @@
+from logging import exception
 import threading
 import mysql.connector
 from decouple import config
@@ -73,7 +74,7 @@ class data:
         ;param number: int
         ;return: str
         """
-        return f"{number // 1000000 + 1}m"
+        return f"{int(number // 1000000 + 1)}m"
 
     def write(self, number, next_number) -> None:
         """
@@ -92,7 +93,14 @@ class data:
                 `421_loop` BOOLEAN NOT NULL,
                 `thread` CHAR(107) NOT NULL
                 );""")
-            db.execute(f"INSERT INTO `{tablename}` (`number`, `next_number`, `421_loop`, `thread`) VALUES ('{number}', '{next_number}', '0', '{thread}');") 
+            try:
+                db.execute(f"INSERT INTO `{tablename}` (`number`, `next_number`, `421_loop`, `thread`) VALUES ('{number}', '{next_number}', '0', '{thread}');") 
+            except Exception as e:
+                if str(e).startswith("1062"):
+                    print("Duplicate")
+                else:
+                    print(e)
+                    exit()  
 
     def check(self, number):
         """
@@ -111,12 +119,12 @@ class data:
 
                 table = db.query(f"SELECT `421_loop`, `thread` FROM `{tabname}` WHERE `number`='{number}';", cache=False)
 
-                print(table)
+                #print(table)
                 if len(table) == 0:
                     return False, False
 
                 else:
-                    if table[0][1] == 0: # Check if other thread is working with this number (all data should be on first row) (other than None means thread is working on it)
+                    if table[0][1] == '0': # Check if other thread is working with this number (all data should be on first row) (other than None means thread is working on it)
                         
                         if table[0][0] == 1: # If 421 is true return true
                             return True, True
@@ -164,4 +172,7 @@ class data:
 
 if __name__ == "__main__":
     if False: print("yup")
-    print(data().check(5))
+    print(data().check(8))
+    print(data().write(8, 4))
+    print(data().check(8))
+    print(data().set_loop(8))
