@@ -1,5 +1,4 @@
 from logging import exception
-from main import compute
 import threading
 import mysql.connector
 from decouple import config
@@ -89,7 +88,7 @@ class data:
         thread = threading.currentThread().getName()
         tablename = self.tablename(number)
         with MySQLWrapper() as db:
-            db.execute(f"""CREATE TABLE IF NOT EXISTS `1m` (
+            db.execute(f"""CREATE TABLE IF NOT EXISTS `{tablename}` (
                 `number` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
                 `next_number` BIGINT UNSIGNED NOT NULL,
                 `421_loop` BOOLEAN NOT NULL,
@@ -117,9 +116,14 @@ class data:
                     table = db.query(f"SELECT `421_loop`, `thread` FROM `{tabname}` WHERE `number`='{number}';", cache=False)
                     
                 except ProgrammingError as e:
-                    if str(e).startswith(1146):
+                    if str(e).startswith("1146"):
                         return False, False
+
+                    elif str(e).startswith("1062"):
+                        print("duplicate")
+
                     else:
+                        from main import compute
                         compute().q.queue[0] = "stop"
                         print(e)
 

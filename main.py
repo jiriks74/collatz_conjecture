@@ -1,53 +1,57 @@
 from dal import data
-import threading
-from queue import Queue
-import multiprocessing
-import os
-
-import time
 from datetime import datetime
-from random import random
+from queue import Queue
+import threading
+from multiprocessing import cpu_count
+from os import name, system
+from time import sleep
 class compute:
     def __init__(self) -> None:
         pass
 
     def main_thread(self) -> None:
-        self.q = Queue()
-        self.q.put(0)
-        self.q.put(0)
+        """
+        Function that the main thread is running. Program should be started with this function (__init__ breaks some functionality)
+        ;return: None
+        """
+        self.clear() # Clear the terminal
+        
+        self.q = Queue() # Initialize queue with 2 entries - for communication between threads
+        self.q.put(0) # First entry if to singalize that the program is stopping and every thread should not start new calculations
+        self.q.put(0) # For start numbers so the threads won't calculate the same number twice (can create duplicate error in database - ask @jiriks74)
 
-        threads = []
-        for i in range(multiprocessing.cpu_count()-1):
-        #for i in range(1):
-            threads.append(threading.Thread(target=self.solve, args=()))
-            threads[i].start()
-            print(f"{threads[i].getName()} was started")
-            #time.sleep(2)
+        try:
+            threads = [] # List of threads
+            for i in range(cpu_count()-1): # Creates list of threads that has number of threads in the system while leaving one free, so the os would have at least one free
+                threads.append(threading.Thread(target=self.solve, args=())) # Create new thread that runs the solve function
+                threads[i].start() # Start the new thread
+                print(f"{threads[i].getName()} was started")
+                sleep(0.5) # Wait a while
 
-        while True:
-            
-            if input("Insert q to quit the program: ") == "q":
-                print("Please wait, the program can take a long time to stop. All computations have to by completed for proper shutdown.")
-                self.q.queue[0] = "stop"
+            print(f"All threads started at: {datetime.now()}")
 
-                for thread in threads:
-                    while thread.isAlive():
-                        pass
+            while True: pass # So the main thread won't exit the program
 
-                    exit()
+        except KeyboardInterrupt: # To stop the program gracefully
+            print("Please wait, the program can take a long time to stop. All computations have to by completed for proper shutdown.")
 
-            else:
-                self.clear()
+            self.q.queue[0] = "stop" # Set exit flag in queue
+
+            for thread in threads: # Wait until all threads close
+                while thread.isAlive(): pass
+
+                exit() # Exit
 
     def solve(self) -> None:
+        """
+        Contrlols threads so they are solving without colliding with eacht other
+        ;return: None
+        """
         while True:
-            acnum = self.q.queue[1] + 1
-            try:
-                self.q.queue[1] = acnum
-            #print (self.q.queue[0])
-            if self.q.queue[0] != "stop":
-                self.compute(acnum)
-                #self.periodic_messages(1)
+            acnum, self.q.queue[1] = self.q.queue[1] + 1 # Get next number I can work on and save it so no other thread is working on it
+
+            if self.q.queue[0] != "stop": # Chect if the program should stop
+                self.compute(acnum) # Calculate the conjecture for a number
 
             else:
                 print(f"Thread '{threading.currentThread().getName()} stopped.")
@@ -60,11 +64,12 @@ class compute:
         ;return None
         """
         try:
-            acnum = startnum
+            acnum = startnum 
             dt = data()
+
             while True:
-                exists, loop = dt.check(acnum)
-                if not exists:
+                exists, loop = dt.check(acnum) # Check if number exists and if it is, is it in 421_loop
+                if not exists: # Calculate next number
                     if acnum % 2 == 0:
                         next_num = acnum / 2
                         dt.write(acnum, next_num)
@@ -78,16 +83,17 @@ class compute:
                     if loop:
                         dt.set_loop(startnum)
                         break
+                    
                     if not loop:
-    #                   dt.set_loop(startnum, threading.currentThread().getName())
                         print(f"""Non 421 number found!:
                         Startnum: {startnum}
                         Table: {dt.tablename(startnum)}""")
                         exit()
-        except Exception as e:
-            self.q.queue[0] = "stop"
+        
+        except Exception as e: # Try to stop the program in a way that database stays as clean as possible
+            self.q.queue[0] = "stop" # Set program stop flag
             print(e)
-
+        
     def clear(self):
         """
         Clears the console both on Windows and Linux.
@@ -95,9 +101,9 @@ class compute:
         Takes no input
         """
         command = 'clear'
-        if os.name in ('nt', 'dos'):  # If Machine is running on Windows, use cls
+        if name in ('nt', 'dos'):  # If Machine is running on Windows, use cls
             command = 'cls'
-        os.system(command)
+        system(command)
 
 
 if __name__ == "__main__":
