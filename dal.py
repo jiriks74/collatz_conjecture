@@ -1,4 +1,3 @@
-from logging import exception
 import threading
 import mysql.connector
 from decouple import config
@@ -69,7 +68,7 @@ class data:
         if credentials:
             self.credentials = credentials
 
-    def tablename(self, number) -> str:
+    def tablename(self, number:int) -> str:
         """
         Get table name for a number
         ;param number: int
@@ -77,7 +76,7 @@ class data:
         """
         return f"{int(number // 1000000 + 1)}m"
 
-    def write(self, number, next_number) -> None:
+    def write(self, number:int, next_number:int) -> None:
         """
         Write working number and next_number into database
         Sets 421_loop to False by default, and uses current thread name
@@ -86,18 +85,18 @@ class data:
         ;return: None
         """   
         thread = threading.currentThread().getName()
-        tablename = self.tablename(number)
+        tabname = self.tablename(number)
         with MySQLWrapper() as db:
-            db.execute(f"""CREATE TABLE IF NOT EXISTS `{tablename}` (
+            db.execute(f"""CREATE TABLE IF NOT EXISTS `{tabname}` (
                 `number` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
                 `next_number` BIGINT UNSIGNED NOT NULL,
                 `421_loop` BOOLEAN NOT NULL,
                 `thread` CHAR(107) NOT NULL
                 );""")
 
-            db.execute(f"UPDATE `{tablename}` SET `number` = '{number}', `next_number` = '{next_number}', `421_loop` = '0', `thread` = '{thread}' WHERE `number` = '{number}';") 
+            db.execute(f"UPDATE `{tabname}` SET `number` = '{number}', `next_number` = '{next_number}', `421_loop` = '0', `thread` = '{thread}' WHERE `number` = '{number}';") 
             
-    def check(self, number):
+    def check(self, number:int):
         """
         Check if number exists in database and return if it falls into 421 loop.
         If another number is working with passed number, this function will wait, until the other thread is done.
@@ -114,21 +113,36 @@ class data:
 
                 try:
                     table = db.query(f"SELECT `421_loop`, `thread` FROM `{tabname}` WHERE `number`='{number}';", cache=False)
-                    
+                
                 except ProgrammingError as e:
                     if str(e).startswith("1146"):
+                        db.execute(f"""CREATE TABLE IF NOT EXISTS `{tabname}` (
+                        `number` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+                        `next_number` BIGINT UNSIGNED NOT NULL,
+                        `421_loop` BOOLEAN NOT NULL,
+                        `thread` CHAR(107) NOT NULL
+                        );""")
+                        db.execute(f"INSERT INTO `{tabname}` (`number`, `next_number`, `421_loop`, `thread`) VALUES ('{number}', '{0}', '0', '{thread}');")
                         return False, False
 
                     elif str(e).startswith("1062"):
                         print("duplicate")
 
                     else:
+                        import traceback
                         from main import compute
+                        traceback.print_exc()
+                        print(threading.currentThread().getName())
                         compute().q.queue[0] = "stop"
-                        print(e)
 
                 #print(table)
                 if len(table) == 0:
+                    db.execute(f"""CREATE TABLE IF NOT EXISTS `{tabname}` (
+                        `number` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+                        `next_number` BIGINT UNSIGNED NOT NULL,
+                        `421_loop` BOOLEAN NOT NULL,
+                        `thread` CHAR(107) NOT NULL
+                        );""")
                     db.execute(f"INSERT INTO `{tabname}` (`number`, `next_number`, `421_loop`, `thread`) VALUES ('{number}', '{0}', '0', '{thread}');")
                     return False, False
 
@@ -150,7 +164,7 @@ class data:
                     elif table[0][1] == thread: # If the current thread created this number, loop other than 421 has been found: number exists, but it isn't 421
                         return True, False
 
-    def set_loop(self, start_number) -> None:
+    def set_loop(self, start_number:int) -> None:
         """
         Set nuber sequence in database to 421_loop: true
         ;param start_number: int

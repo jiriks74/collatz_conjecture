@@ -26,11 +26,15 @@ class compute:
                 threads.append(threading.Thread(target=self.solve, args=())) # Create new thread that runs the solve function
                 threads[i].start() # Start the new thread
                 print(f"{threads[i].getName()} was started")
-                sleep(0.5) # Wait a while
+                sleep(1) # Wait a while
 
             print(f"All threads started at: {datetime.now()}")
 
-            while True: pass # So the main thread won't exit the program
+            while True: 
+                if self.q.queue[0] == "stop":
+                    raise KeyboardInterrupt
+                else:
+                    pass # So the main thread won't exit the program
 
         except KeyboardInterrupt: # To stop the program gracefully
             print("Please wait, the program can take a long time to stop. All computations have to by completed for proper shutdown.")
@@ -48,7 +52,7 @@ class compute:
         ;return: None
         """
         while True:
-            acnum, self.q.queue[1] = self.q.queue[1] + 1 # Get next number I can work on and save it so no other thread is working on it
+            acnum = self.q.queue[1] = self.q.queue[1] + 1 # Get next number I can work on and save it so no other thread is working on it
 
             if self.q.queue[0] != "stop": # Chect if the program should stop
                 self.compute(acnum) # Calculate the conjecture for a number
@@ -57,7 +61,7 @@ class compute:
                 print(f"Thread '{threading.currentThread().getName()} stopped.")
                 break
 
-    def compute(self, startnum) -> None:
+    def compute(self, startnum:int) -> None:
         """
         Function for computing if passed number falls into 421_loop and writing result to the database
         ;param startnum (number that you want to calculate the sequence for)
@@ -91,9 +95,15 @@ class compute:
                         exit()
         
         except Exception as e: # Try to stop the program in a way that database stays as clean as possible
+            import traceback
+            traceback.print_exc()
+            print(f"""Thread name: {threading.currentThread().getName()}
+            Start number: {startnum}
+            acnum: {acnum}""")
             self.q.queue[0] = "stop" # Set program stop flag
-            print(e)
-        
+            #self.printException()
+            #print(e)
+
     def clear(self):
         """
         Clears the console both on Windows and Linux.
@@ -104,7 +114,6 @@ class compute:
         if name in ('nt', 'dos'):  # If Machine is running on Windows, use cls
             command = 'cls'
         system(command)
-
 
 if __name__ == "__main__":
     compute().main_thread()
