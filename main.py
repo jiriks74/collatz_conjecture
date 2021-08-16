@@ -1,10 +1,12 @@
-from dal import data
-from datetime import datetime
-from queue import Queue
 import threading
+from datetime import datetime
 from multiprocessing import cpu_count
 from os import name, system
-from time import sleep
+from queue import Queue
+
+from dal import data
+
+
 class compute:
     def __init__(self) -> None:
         pass
@@ -26,7 +28,7 @@ class compute:
                 threads.append(threading.Thread(target=self.solve, args=())) # Create new thread that runs the solve function
                 threads[i].start() # Start the new thread
                 print(f"{threads[i].getName()} was started")
-                sleep(1) # Wait a while
+                #sleep(1) # Wait a while
 
             print(f"All threads started at: {datetime.now()}")
 
@@ -58,7 +60,7 @@ class compute:
                 self.compute(acnum) # Calculate the conjecture for a number
 
             else:
-                print(f"Thread '{threading.currentThread().getName()} stopped.")
+                print(f"Thread '{threading.currentThread().getName()}' stopped.")
                 break
 
     def compute(self, startnum:int) -> None:

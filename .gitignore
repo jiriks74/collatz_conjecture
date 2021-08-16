@@ -128,8 +128,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# VSCode folder
+# VSCode
 .vscode
+*.code-workspace
 
 # .ssl folder with SSL Certificates
 .ssl

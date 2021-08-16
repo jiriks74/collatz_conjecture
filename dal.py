@@ -1,7 +1,9 @@
 import threading
+
 import mysql.connector
 from decouple import config
-from mysql.connector.errors import ProgrammingError
+from mysql.connector.errors import IntegrityError, ProgrammingError
+
 
 class MySQLWrapper:
     """
@@ -113,8 +115,37 @@ class data:
 
                 try:
                     table = db.query(f"SELECT `421_loop`, `thread` FROM `{tabname}` WHERE `number`='{number}';", cache=False)
-                
-                except ProgrammingError as e:
+
+                    #print(table)
+                    if len(table) == 0:
+                        db.execute(f"""CREATE TABLE IF NOT EXISTS `{tabname}` (
+                            `number` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
+                            `next_number` BIGINT UNSIGNED NOT NULL,
+                            `421_loop` BOOLEAN NOT NULL,
+                            `thread` CHAR(107) NOT NULL
+                            );""")
+                        db.execute(f"INSERT INTO `{tabname}` (`number`, `next_number`, `421_loop`, `thread`) VALUES ('{number}', '{0}', '0', '{thread}');")
+                        return False, False
+
+                    else:
+                        if table[0][1] == '0': # Check if other thread is working with this number (all data should be on first row) (other than None means thread is working on it)
+                            
+                            if table[0][0] == 1: # If 421 is true return true
+                                return True, True
+
+                            elif table[0][0] == 0: # If 421 is false return false
+                                return True, False
+
+                            else: # Else - nonsense value has appeared in database - WTF? JustInCase
+                                print(f"""Nonsense in database was found:
+                                In table: {tabname}
+                                At number: {number}""")
+
+                                exit()
+                        elif table[0][1] == thread: # If the current thread created this number, loop other than 421 has been found: number exists, but it isn't 421
+                            return True, False
+
+                except (ProgrammingError, IntegrityError) as e:
                     if str(e).startswith("1146"):
                         db.execute(f"""CREATE TABLE IF NOT EXISTS `{tabname}` (
                         `number` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
@@ -130,39 +161,11 @@ class data:
 
                     else:
                         import traceback
+
                         from main import compute
                         traceback.print_exc()
                         print(threading.currentThread().getName())
                         compute().q.queue[0] = "stop"
-
-                #print(table)
-                if len(table) == 0:
-                    db.execute(f"""CREATE TABLE IF NOT EXISTS `{tabname}` (
-                        `number` BIGINT UNSIGNED NOT NULL PRIMARY KEY,
-                        `next_number` BIGINT UNSIGNED NOT NULL,
-                        `421_loop` BOOLEAN NOT NULL,
-                        `thread` CHAR(107) NOT NULL
-                        );""")
-                    db.execute(f"INSERT INTO `{tabname}` (`number`, `next_number`, `421_loop`, `thread`) VALUES ('{number}', '{0}', '0', '{thread}');")
-                    return False, False
-
-                else:
-                    if table[0][1] == '0': # Check if other thread is working with this number (all data should be on first row) (other than None means thread is working on it)
-                        
-                        if table[0][0] == 1: # If 421 is true return true
-                            return True, True
-
-                        elif table[0][0] == 0: # If 421 is false return false
-                            return True, False
-
-                        else: # Else - nonsense value has appeared in database - WTF? JustInCase
-                            print(f"""Nonsense in database was found:
-                            In table: {tabname}
-                            At number: {number}""")
-
-                            exit()
-                    elif table[0][1] == thread: # If the current thread created this number, loop other than 421 has been found: number exists, but it isn't 421
-                        return True, False
 
     def set_loop(self, start_number:int) -> None:
         """
