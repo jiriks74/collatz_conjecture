@@ -76,7 +76,7 @@ class data:
         ;param number: int
         ;return: str
         """
-        return f"{int(number // 1000000 + 1)}m"
+        return f"{int(number // 1000000000 + 1)}mld"
 
     def write(self, number:int, next_number:int) -> None:
         """
