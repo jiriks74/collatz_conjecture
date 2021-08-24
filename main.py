@@ -20,7 +20,7 @@ class compute:
         
         self.q = Queue() # Initialize queue with 2 entries - for communication between threads
         self.q.put(0) # First entry if to singalize that the program is stopping and every thread should not start new calculations
-        self.q.put(0) # For start numbers so the threads won't calculate the same number twice (can create duplicate error in database - ask @jiriks74)
+        self.q.put(data().last_number()) # For start numbers so the threads won't calculate the same number twice (can create duplicate error in database - ask @jiriks74)
 
         try:
             threads = [] # List of threads
@@ -45,6 +45,8 @@ class compute:
 
             for thread in threads: # Wait until all threads close
                 while thread.isAlive(): pass
+
+                data().write_last_number(self.q.queue[1])
 
                 exit() # Exit
 

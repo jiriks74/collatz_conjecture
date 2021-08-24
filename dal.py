@@ -70,6 +70,31 @@ class data:
         if credentials:
             self.credentials = credentials
 
+    def last_number(self) -> int:
+        """
+        Get last calculated number from database
+        ;return: int
+        """
+        with MySQLWrapper() as db:
+            db.execute(f"""CREATE TABLE IF NOT EXISTS `run_data` (
+                `last_number` BIGINT UNSIGNED NOT NULL PRIMARY KEY);""")
+            table = db.query("SELECT * FROM `run_data`;")
+            if len(table) == 0:
+                db.execute("INSERT INTO `run_data` (`last_number`) VALUES ('0');")
+                return int(0)
+            else: return table[0][0]
+
+    def write_last_number(self, lastnum) -> None:
+        """
+        Put last calculated number into database
+        ;param lastnum: int
+        ;return: None
+        """
+        with MySQLWrapper() as db:
+            db.execute(f"""CREATE TABLE IF NOT EXISTS `run_data` (
+                `last_number` BIGINT UNSIGNED NOT NULL PRIMARY KEY);""")
+            db.execute(f"UPDATE `run_data` SET `last_number` = '{lastnum}' WHERE `last_number` != '{None}';")
+
     def tablename(self, number:int) -> str:
         """
         Get table name for a number
